@@ -47,3 +47,17 @@ class GameField:
             if not test_tube.check_if_empty() or test_tube.check_if_completed():
                 return False
         return True
+
+
+class GameSimulator:
+
+    def __init__(self, game_filed):
+        self.log = []
+        self.restricted_moves = []
+        self.game_filed = game_filed
+
+    def make_move(self):
+        pass
+
+    def print_result(self):
+        pass
