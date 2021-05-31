@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 
-from collections import defaultdict
-import copy
 import random
 
 
@@ -24,12 +22,16 @@ class TestTube:
         self.ball3 = ball3
         self.ball4 = ball4
         self.balls = [ball1, ball2, ball3, ball4]
-        self.colours = 0
-        self.balls_amount = 4
-        self.check_colours()
+        self._update_state()
 
     def _update_balls_list(self):
         self.balls = [self.ball1, self.ball2, self.ball3, self.ball4]
+
+    def _update_state(self):
+        self._update_balls_list()
+        self.check_if_completed()
+        self.check_balls_amount()
+        self.check_colours()
 
     def check_colours(self):
         self.colours = 0
@@ -56,7 +58,7 @@ class TestTube:
     def check_balls_amount(self):
         self.balls_amount = 0
         for ball in self.balls:
-            if ball:
+            if ball is not None:
                 self.balls_amount += 1
 
     def check_if_completed(self):
@@ -67,16 +69,14 @@ class TestTube:
         return False
 
     def put_new_ball(self, new_ball):
-        if self.balls_amount > 3:
+        if self.balls_amount == 4:
             raise ValueError("Too many balls")
         self.ball4 = self.ball3
         self.ball3 = self.ball2
         self.ball2 = self.ball1
         self.ball1 = new_ball
-        self._update_balls_list()
-        self.check_if_completed()
-        self.check_balls_amount()
-        self.check_colours()
+        self._update_state()
+
 
     def remove_ball(self):
         if self.balls_amount < 1:
@@ -85,15 +85,12 @@ class TestTube:
         self.ball2 = self.ball3
         self.ball3 = self.ball4
         self.ball4 = None
-        self._update_balls_list()
-        self.check_if_empty()
-        self.check_balls_amount()
-        self.check_colours()
+        self._update_state()
 
 
 class GameField:
 
-    def __init__(self, test_tubes: tuple, empty_tubes_amount: int):
+    def __init__(self, test_tubes: list, empty_tubes_amount: int):
         self.test_tubes = test_tubes
         self.empty_tubes_start = empty_tubes_amount
         self.empty_tubes_current = []
@@ -191,7 +188,7 @@ class GameSimulator:
         checked_moves = []
         for test_tube_number in self.game_field.unsorted_tubes:
             test_tube = self.game_field.test_tubes[test_tube_number-1]
-            if test_tube.check_can_put_into:
+            if test_tube.check_can_put_into():
                 if test_tube.ball1 == self.current_ball_colour:
                     possible_moves.append(test_tube.number)
         self.game_field.find_empty_tubes()

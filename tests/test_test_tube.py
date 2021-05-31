@@ -1,18 +1,24 @@
 # -*- coding: utf-8 -*-
 
 
-import Balls
+import balls_sorting_engine
 import unittest
 
 
 class TestTube(unittest.TestCase):
 
     def setUp(self):
-        self.tube = Balls.TestTube(1, "red", "blue", "blue", "yellow")
+        self.tube = balls_sorting_engine.TestTube(1, "red", "blue", "blue", "yellow")
 
     def test_check_colours(self):
         self.tube.check_colours()
         self.assertEqual(3, self.tube.colours)
+
+    def test_balls_amount(self):
+        self.tube.remove_ball()
+        self.tube.remove_ball()
+        self.tube.put_new_ball("yellow")
+        self.assertEqual(3, self.tube.balls_amount)
 
     def test_check_balls_amount(self):
         self.tube.ball4 = None
@@ -29,6 +35,7 @@ class TestTube(unittest.TestCase):
     def test_put_new_ball(self):
         self.tube.ball4 = None
         self.tube.ball3 = None
+        self.tube._update_state()
         self.tube.put_new_ball("red")
         self.assertEqual(2, self.tube.colours)
         self.assertEqual(3, self.tube.balls_amount)
@@ -56,7 +63,7 @@ class TestTube(unittest.TestCase):
         self.assertEqual(self.tube.check_if_completed(), True)
 
     def test_if_empty_True(self):
-        self.tube = Balls.TestTube(1, None, None, None, None)
+        self.tube = balls_sorting_engine.TestTube(1, None, None, None, None)
         self.assertEqual(self.tube.check_if_empty(), True)
         self.assertEqual(self.tube.check_can_put_into(), True)
         self.assertEqual(self.tube.check_if_completed(), False)
