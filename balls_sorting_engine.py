@@ -22,6 +22,11 @@ class TestTube:
         self.ball3 = ball3
         self.ball4 = ball4
         self.balls = [ball1, ball2, ball3, ball4]
+        self.balls_amount = 0
+        self.colours = 0
+        self.can_put_into = False
+        self.empty = False
+        self.completed = False
         self._update_state()
 
     def _update_balls_list(self):
@@ -29,11 +34,12 @@ class TestTube:
 
     def _update_state(self):
         self._update_balls_list()
-        self.check_if_completed()
-        self.check_balls_amount()
-        self.check_colours()
+        self._check_if_empty()
+        self._check_can_put_into()
+        self._check_if_completed()
+        self._check_can_put_into()
 
-    def check_colours(self):
+    def _check_colours(self):
         self.colours = 0
         colours = set()
         for ball in self.balls:
@@ -42,31 +48,33 @@ class TestTube:
                     colours.add(ball)
                     self.colours += 1
 
-    def check_can_put_into(self):
-        self.check_balls_amount()
+    def _check_can_put_into(self):
+        self._check_balls_amount()
         if 4 > self.balls_amount:
-            return True
+            self.can_put_into = True
         else:
-            return False
+            self.can_put_into = False
 
-    def check_if_empty(self):
+    def _check_if_empty(self):
         for ball in self.balls:
-            if ball:
-                return False
-        return True
+            if ball is not None:
+                self.empty = False
+                return
+        self.empty = True
 
-    def check_balls_amount(self):
+    def _check_balls_amount(self):
         self.balls_amount = 0
         for ball in self.balls:
             if ball is not None:
                 self.balls_amount += 1
 
-    def check_if_completed(self):
-        self.check_colours()
+    def _check_if_completed(self):
+        self._check_colours()
         if 1 == self.colours:
-            if not self.check_can_put_into():
-                return True
-        return False
+            if not self.can_put_into:
+                self.completed = True
+                return
+        self.completed = False
 
     def put_new_ball(self, new_ball):
         if self.balls_amount == 4:
@@ -76,7 +84,6 @@ class TestTube:
         self.ball2 = self.ball1
         self.ball1 = new_ball
         self._update_state()
-
 
     def remove_ball(self):
         if self.balls_amount < 1:
@@ -102,27 +109,26 @@ class GameField:
         self.one_coloured_unfinished_tubes = []
         for tube_number in self.unsorted_tubes:
             tube = self.test_tubes[tube_number-1]
-            tube.check_colours()
             if 1 == tube.colours:
                 self.one_coloured_unfinished_tubes.append(tube.number)
 
     def _find_unsorted_tubes(self):
         self.unsorted_tubes = []
         for test_tube in self.test_tubes:
-            if not test_tube.check_if_empty():
-                if not test_tube.check_if_completed():
+            if not test_tube.empty:
+                if not test_tube.completed:
                     self.unsorted_tubes.append(test_tube.number)
 
     def find_empty_tubes(self):
         self.empty_tubes_current = []
         for test_tube in self.test_tubes:
-            if test_tube.check_if_empty():
+            if test_tube.empty:
                 self.empty_tubes_current.append(test_tube.number)
 
     def check_if_finished(self):
         for test_tube in self.test_tubes:
-            if not test_tube.check_if_empty():
-                if not test_tube.check_if_completed():
+            if not test_tube.empty:
+                if not test_tube.completed:
                     return False
         return True
 
@@ -144,15 +150,14 @@ class GameSimulator:
         for _ in range(tries):
             self._find_first_tube(checked_tubes)
             checked_tubes.append(self.first_test_tube_number)
-            if self.second_test_tube_number:
-                break
-            self._find_second_tube()
-        if self.second_test_tube_number:
-            self.game_field.test_tubes[self.first_test_tube_number-1].remove_ball()
-            self.game_field.test_tubes[self.second_test_tube_number-1].put_new_ball(self.current_ball_colour)
-            self._update_banned_moves()
-            self._write_log()
-            return True
+            if self.second_test_tube_number is None:
+                self._find_second_tube()
+            if self.second_test_tube_number is not None:
+                self.game_field.test_tubes[self.first_test_tube_number-1].remove_ball()
+                self.game_field.test_tubes[self.second_test_tube_number-1].put_new_ball(self.current_ball_colour)
+                self._update_banned_moves()
+                self._write_log()
+                return True
         return False
 
     def check_if_finished(self):
@@ -185,25 +190,29 @@ class GameSimulator:
 
     def _find_second_tube(self):
         possible_moves = []
-        checked_moves = []
         for test_tube_number in self.game_field.unsorted_tubes:
+            if test_tube_number == self.first_test_tube_number:
+                continue
             test_tube = self.game_field.test_tubes[test_tube_number-1]
-            if test_tube.check_can_put_into():
+            if test_tube.can_put_into:
                 if test_tube.ball1 == self.current_ball_colour:
                     possible_moves.append(test_tube.number)
-        self.game_field.find_empty_tubes()
-        possible_moves += self.game_field.empty_tubes_current
-        for _ in range(len(possible_moves)):
-            while True:
-                number = random.choice(possible_moves)
-                if number not in checked_moves:
-                    checked_moves.append(number)
-                    break
+        if 1 != self.game_field.test_tubes[self.first_test_tube_number-1].colours:
+            self.game_field.find_empty_tubes()
+            possible_moves += self.game_field.empty_tubes_current
+        while len(possible_moves) > 0:
+            number = random.choice(possible_moves)
+            possible_moves.remove(number)
+            test_tube = self.game_field.test_tubes[number-1]
             if (self.first_test_tube_number, number) in self.banned_moves:
-                checked_moves.append(number)
                 continue
-            self.second_test_tube_number = number
-            return
+            if not test_tube.empty:
+                if test_tube.ball1 == self.current_ball_colour:
+                    self.second_test_tube_number = number
+                    return
+            else:
+                self.second_test_tube_number = number
+                return
         self.second_test_tube_number = None
 
     def _write_log(self):

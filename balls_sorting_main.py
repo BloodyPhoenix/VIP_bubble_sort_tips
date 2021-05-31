@@ -19,22 +19,29 @@ def balls_sort():
 Нумерация пробирок идёт от верхнего левого угла поля, шариков - от верхнего к нижнему.""")
     base_game_field = balls_sorting_setup.setup_game_field()
     tries = 0
-    while True:
+    completed = False
+    while not completed:
         tries += 1
         print("Попытка номер", tries)
         game_field = copy.deepcopy(base_game_field)
         simulator = balls_sorting_engine.GameSimulator(game_field)
-        simulator.make_move()
-        if simulator.check_if_finished():
-            print_log(simulator)
-        break
+        has_moves = True
+        while has_moves:
+            if simulator.make_move():
+                if simulator.check_if_finished():
+                    print_log(simulator)
+                    completed = True
+                    has_moves = False
+            else:
+                has_moves = False
     input()
 
 
 def print_log(simulator: balls_sorting_engine.GameSimulator):
-    for index, line in enumerate(simulator.log):
-        print(f"{index}. {line}")
+    for line in simulator.log:
+        print(line)
 
 
 if __name__ == "__main__":
     balls_sort()
+
