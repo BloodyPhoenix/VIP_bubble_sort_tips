@@ -5,22 +5,16 @@ from collections import defaultdict
 import balls_sorting_engine
 
 
-class TooManyColours(ValueError):
-    pass
-
-
 def setup_game_field():
     test_tubes_amount = get_test_tubes_amount()
     empty_tubes_amount = get_empty_tubes_amount()
     empty_tubes_position = get_empty_tubes_position(empty_tubes_amount, test_tubes_amount)
-    test_tubes = []
-    while True:
+    tubes_filler = BallsColoursFiller(test_tubes_amount, empty_tubes_position)
+    test_tubes = None
+    while not test_tubes:
         try:
-            test_tubes = fill_tubes_with_balls(
-                tubes_amount=test_tubes_amount, empty_tubes_position=empty_tubes_position
-            )
-            break
-        except TooManyColours:
+            test_tubes = tubes_filler.fill_tubes_with_balls()
+        except ValueError:
             continue
     for index, test_tube in enumerate(test_tubes):
         test_tubes[index] = balls_sorting_engine.TestTube(
@@ -66,32 +60,86 @@ def get_empty_tubes_position(empty_tubes_amount, test_tubes_amount):
     return empty_tubes
 
 
-def fill_tubes_with_balls(tubes_amount, empty_tubes_position):
-    colour_counter = defaultdict(int)
-    test_tubes = []
-    for _ in range(tubes_amount):
-        test_tubes.append(["", "", "", ""])
-    for tube_index in range(tubes_amount):
-        if tube_index+1 in empty_tubes_position:
-            test_tubes[tube_index] = [None, None, None, None]
-            continue
-        for ball_index in range(4):
-            print(f"Введите цвет {ball_index+1} шарика в {tube_index+1} пробирке.")
-            colour = input()
-            test_tubes[tube_index][ball_index] = colour
-            colour_counter[colour] += 1
-            if colour_counter[colour] > 4:
-                print("Ошибка ввода. Больше четырёх шариков одного цвета.")
-                raise TooManyColours()
-    while True:
-        for colour in colour_counter:
-            if colour_counter[colour] == 1:
-                for tube_index, test_tube in enumerate(test_tubes):
-                    for ball_index, ball_colour in test_tube:
-                        if ball_colour == colour:
-                            print(f"Опечатка: цвет шарика номер {ball_colour} {colour} в пробирке номер {tube_index+1}")
-                            print("Введите корректный цвет шарика")
-                            new_colour = input()
-                            test_tubes[tube_index][ball_index] = new_colour
-        return test_tubes
+class BallsColoursFiller:
+
+    def __init__(self, test_tubes_amount: int, empty_tubes_postition: list):
+        self.test_tubes_amount = test_tubes_amount
+        self.empty_tubes_position = empty_tubes_postition
+        self.colour_counter = defaultdict(int)
+        self.test_tubes = []
+
+    def _create_tubes(self):
+        for _ in range(self.test_tubes_amount):
+            self.test_tubes.append(["", "", "", ""])
+
+    def fill_tubes_with_balls(self):
+        self._create_tubes()
+        for tube_index in range(self.test_tubes_amount):
+            if tube_index+1 in self.empty_tubes_position:
+                self.test_tubes[tube_index] = [None, None, None, None]
+                continue
+            for ball_index in range(4):
+                print(f"Введите цвет {ball_index+1} шарика в {tube_index+1} пробирке.")
+                colour = input()
+                self.test_tubes[tube_index][ball_index] = colour
+                self.colour_counter[colour] += 1
+                if self.colour_counter[colour] > 4:
+                    print("Ошибка ввода. Больше четырёх шариков одного цвета.")
+                    raise ValueError
+        correct_input = False
+        while not correct_input:
+            correct_input = self._check_single_colour()
+        correct_input = False
+        while not correct_input:
+            correct_input = self._check_one_coloured_balls_amount()
+            if not correct_input:
+                self.correct_input()
+        return self.test_tubes
+
+    def _check_single_colour(self):
+        """Checks if there a typo in colours"""
+        for colour in self.colour_counter:
+            if 1 == self.colour_counter[colour]:
+                for index, test_tube in enumerate(self.test_tubes):
+                    if colour in test_tube:
+                        ball_index = test_tube.index(colour)
+                        print(f"Опечатка в пробирке номер {index} с шариком {ball_index}. Введите корректный цвет")
+                        new_colour = input()
+                        self.test_tubes[index][ball_index] = new_colour
+                        return False
+        return True
+
+    def _check_one_coloured_balls_amount(self):
+        for colour in self.colour_counter:
+            if 4 > self.colour_counter[colour]:
+                print(f"Слишком мало шариков цвета {colour}. Скорректируйте ваш ввод")
+                return False
+        return True
+
+    def correct_input(self):
+        """Allows user to correct his input"""
+        while True:
+            test_tube_index = input("Введите номер пробирки (нормеа считаютс слеванаправо и сверху вниз): ")
+            if not test_tube_index.isdigit():
+                print("Вы ввели не число! Повторите ввод.")
+            test_tube_index = int(test_tube_index)
+            if test_tube_index > self.test_tubes_amount:
+                print("Слишком большой номер. Пробирки с таким номером нет! Повторите ввод")
+            else:
+                test_tube_index = test_tube_index-1
+                break
+        while True:
+            ball_index = input("Введите номер шарика (номера шариков считаются сверху-вниз): ")
+            if not ball_index.isdigit():
+                print("Вы ввели не число! Повторите ввод.")
+            ball_index = int(ball_index)
+            if ball_index > 4:
+                print("Неверный номер шарика. В пробирке не может быть больше четырёх шариков. Повторите ввод")
+            else:
+                ball_index = ball_index-1
+                break
+        print(f"Введите новый цвет {ball_index+1} шарика в {test_tube_index+1} пробирке")
+        new_colour = input()
+        self.test_tubes[test_tube_index][ball_index] = new_colour
+
 
