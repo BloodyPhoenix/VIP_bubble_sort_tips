@@ -2,24 +2,24 @@
 
 
 from collections import defaultdict
-import balls_sorting_engine
+import bubble_sort_engine
 
 
 def setup_game_field():
     test_tubes_amount = get_test_tubes_amount()
     empty_tubes_amount = get_empty_tubes_amount()
     empty_tubes_position = get_empty_tubes_position(empty_tubes_amount, test_tubes_amount)
-    tubes_filler = BallsColoursFiller(test_tubes_amount, empty_tubes_position)
+    tubes_filler = BubblesColoursFiller(test_tubes_amount, empty_tubes_position)
     test_tubes = None
     while not test_tubes:
         try:
-            test_tubes = tubes_filler.fill_tubes_with_balls()
+            test_tubes = tubes_filler.fill_tubes_with_bubbles()
         except ValueError:
             continue
     for index, test_tube in enumerate(test_tubes):
-        test_tubes[index] = balls_sorting_engine.TestTube(
+        test_tubes[index] = bubble_sort_engine.TestTube(
             index+1, test_tube[0], test_tube[1], test_tube[2], test_tube[3])
-    return balls_sorting_engine.GameField(test_tubes, empty_tubes_amount)
+    return bubble_sort_engine.GameField(test_tubes, empty_tubes_amount)
 
 
 def get_test_tubes_amount():
@@ -60,7 +60,7 @@ def get_empty_tubes_position(empty_tubes_amount, test_tubes_amount):
     return empty_tubes
 
 
-class BallsColoursFiller:
+class BubblesColoursFiller:
 
     def __init__(self, test_tubes_amount: int, empty_tubes_postition: list):
         self.test_tubes_amount = test_tubes_amount
@@ -72,16 +72,16 @@ class BallsColoursFiller:
         for _ in range(self.test_tubes_amount):
             self.test_tubes.append(["", "", "", ""])
 
-    def fill_tubes_with_balls(self):
+    def fill_tubes_with_bubbles(self):
         self._create_tubes()
         for tube_index in range(self.test_tubes_amount):
             if tube_index+1 in self.empty_tubes_position:
                 self.test_tubes[tube_index] = [None, None, None, None]
                 continue
-            for ball_index in range(4):
-                print(f"Введите цвет {ball_index+1} шарика в {tube_index+1} пробирке.")
+            for bubble_index in range(4):
+                print(f"Введите цвет {bubble_index+1} шарика в {tube_index+1} пробирке.")
                 colour = input()
-                self.test_tubes[tube_index][ball_index] = colour
+                self.test_tubes[tube_index][bubble_index] = colour
                 self.colour_counter[colour] += 1
                 if self.colour_counter[colour] > 4:
                     print("Ошибка ввода. Больше четырёх шариков одного цвета.")
@@ -91,7 +91,7 @@ class BallsColoursFiller:
             correct_input = self._check_single_colour()
         correct_input = False
         while not correct_input:
-            correct_input = self._check_one_coloured_balls_amount()
+            correct_input = self._check_one_coloured_bubbles_amount()
             if not correct_input:
                 self.correct_input()
         return self.test_tubes
@@ -102,14 +102,14 @@ class BallsColoursFiller:
             if 1 == self.colour_counter[colour]:
                 for index, test_tube in enumerate(self.test_tubes):
                     if colour in test_tube:
-                        ball_index = test_tube.index(colour)
-                        print(f"Опечатка в пробирке номер {index} с шариком {ball_index}. Введите корректный цвет")
+                        bubble_index = test_tube.index(colour)
+                        print(f"Опечатка в пробирке номер {index} с шариком {bubble_index}. Введите корректный цвет")
                         new_colour = input()
-                        self.test_tubes[index][ball_index] = new_colour
+                        self.test_tubes[index][bubble_index] = new_colour
                         return False
         return True
 
-    def _check_one_coloured_balls_amount(self):
+    def _check_one_coloured_bubbles_amount(self):
         for colour in self.colour_counter:
             if 4 > self.colour_counter[colour]:
                 print(f"Слишком мало шариков цвета {colour}. Скорректируйте ваш ввод")
@@ -129,17 +129,17 @@ class BallsColoursFiller:
                 test_tube_index = test_tube_index-1
                 break
         while True:
-            ball_index = input("Введите номер шарика (номера шариков считаются сверху-вниз): ")
-            if not ball_index.isdigit():
+            bubble_index = input("Введите номер шарика (номера шариков считаются сверху-вниз): ")
+            if not bubble_index.isdigit():
                 print("Вы ввели не число! Повторите ввод.")
-            ball_index = int(ball_index)
-            if ball_index > 4:
+            bubble_index = int(bubble_index)
+            if bubble_index > 4:
                 print("Неверный номер шарика. В пробирке не может быть больше четырёх шариков. Повторите ввод")
             else:
-                ball_index = ball_index-1
+                bubble_index = bubble_index-1
                 break
-        print(f"Введите новый цвет {ball_index+1} шарика в {test_tube_index+1} пробирке")
+        print(f"Введите новый цвет {bubble_index+1} шарика в {test_tube_index+1} пробирке")
         new_colour = input()
-        self.test_tubes[test_tube_index][ball_index] = new_colour
+        self.test_tubes[test_tube_index][bubble_index] = new_colour
 
 
